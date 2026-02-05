@@ -2,7 +2,6 @@ import { getRecentIncidents } from '@/lib/incidents';
 import IncidentFeed from '@/components/IncidentFeed';
 import Link from 'next/link';
 
-export const dynamic = 'force-dynamic';
 
 export default async function IncidentsPage() {
   const incidents = await getRecentIncidents(50);
