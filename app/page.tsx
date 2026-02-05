@@ -6,34 +6,34 @@ import OverallStatus from '@/components/OverallStatus';
 import ServiceList from '@/components/ServiceList';
 import IncidentFeed from '@/components/IncidentFeed';
 import UptimeBar, { generateMockUptimeData, calculateTotalUptime } from '@/components/UptimeBar';
-import { SystemStatus, checkAllServices, getDemoStatus } from '@/lib/health-checker';
+import { ServiceStatus, ServiceHealth } from '@/lib/health-checker';
 import { Incident } from '@/lib/incidents';
+
+interface StatusResponse {
+  overall: ServiceStatus;
+  services: ServiceHealth[];
+  lastUpdated: string;
+}
 
 const REFRESH_INTERVAL = 60000; // 60 seconds
 
 export default function StatusPage() {
-  const [status, setStatus] = useState<SystemStatus | null>(null);
+  const [status, setStatus] = useState<StatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
-  const [useDemo, setUseDemo] = useState(false);
 
   const fetchStatus = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await checkAllServices();
-      // If all services are unknown (CORS), fall back to demo
-      const allUnknown = result.services.every(s => s.status === 'unknown');
-      if (allUnknown) {
-        setUseDemo(true);
-        setStatus(getDemoStatus());
-      } else {
-        setUseDemo(false);
-        setStatus(result);
-      }
+      const response = await fetch('/api/status', { cache: 'no-store' });
+      if (!response.ok) throw new Error('Failed to fetch status');
+      const result = await response.json();
+      setStatus(result);
+      setError(null);
       setLastRefresh(new Date());
     } catch (err) {
-      setUseDemo(true);
-      setStatus(getDemoStatus());
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -49,7 +49,7 @@ export default function StatusPage() {
   const uptimeData = generateMockUptimeData(90);
   const totalUptime = calculateTotalUptime(uptimeData);
 
-  // Mock incidents
+  // Mock incidents (will be replaced with real data)
   const activeIncidents: Incident[] = [];
 
   if (loading && !status) {
@@ -112,11 +112,11 @@ export default function StatusPage() {
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 py-8">
-        {/* Demo Mode Banner */}
-        {useDemo && (
-          <div className="mb-6 p-4 rounded-xl border" style={{ background: '#1a1708', borderColor: '#332d0d' }}>
-            <p className="text-sm" style={{ color: '#ffd60a' }}>
-              <span className="font-semibold">Demo Mode:</span> Showing simulated status data. Live health checks require CORS-enabled service endpoints.
+        {/* Error Banner */}
+        {error && (
+          <div className="mb-6 p-4 rounded-xl border" style={{ background: '#1a0d0d', borderColor: '#3d1f1f' }}>
+            <p className="text-sm" style={{ color: '#ef4444' }}>
+              <span className="font-semibold">Error:</span> {error}
             </p>
           </div>
         )}
