@@ -1,161 +1,164 @@
-// Health checker utility for fetching service health
+// Health checker that works client-side
 
-import { services, ServiceConfig } from './services';
-
-export type ServiceStatus = 'operational' | 'degraded' | 'outage' | 'unknown';
-
-export interface HealthCheck {
-  status: 'healthy' | 'degraded' | 'unhealthy';
-  service?: string;
-  version?: string;
-  timestamp?: string;
-  uptime?: number;
-  checks?: Record<string, 'up' | 'down'>;
-}
+export type ServiceStatus = 'operational' | 'degraded' | 'down' | 'unknown';
 
 export interface ServiceHealth {
-  serviceId: string;
+  id: string;
   name: string;
   description: string;
-  group: string;
   status: ServiceStatus;
-  latency: number | null;
-  lastChecked: string;
-  healthData: HealthCheck | null;
-  error: string | null;
+  latency?: number;
+  lastCheck: string;
+  group: string;
 }
 
 export interface SystemStatus {
   overall: ServiceStatus;
   services: ServiceHealth[];
   lastUpdated: string;
-  uptimePercentage: number;
 }
 
-const TIMEOUT_MS = 10000; // 10 second timeout
+// Service configuration with production URLs
+export interface ServiceConfig {
+  id: string;
+  name: string;
+  description: string;
+  healthUrl: string;
+  group: string;
+}
 
+// Production service URLs - these should match your deployed services
+export const services: ServiceConfig[] = [
+  {
+    id: 'rest-api',
+    name: 'REST API',
+    description: 'External API for trading bot management',
+    healthUrl: 'https://rest-api.tokenbot.com/v1/health',
+    group: 'API Services',
+  },
+  {
+    id: 'graphql',
+    name: 'GraphQL API',
+    description: 'GraphQL backend for dashboards',
+    healthUrl: 'https://gql-api.tokenbot.com/health',
+    group: 'API Services',
+  },
+  {
+    id: 'dashboard',
+    name: 'User Dashboard',
+    description: 'Web application for users',
+    healthUrl: 'https://app.tokenbot.com/api/health',
+    group: 'Frontend',
+  },
+  {
+    id: 'admin-dashboard',
+    name: 'Admin Dashboard',
+    description: 'Admin panel for management',
+    healthUrl: 'https://admin.tokenbot.com/api/health',
+    group: 'Frontend',
+  },
+  {
+    id: 'webhooks',
+    name: 'Webhooks Service',
+    description: 'Webhook delivery service',
+    healthUrl: 'https://webhooks.tokenbot.com/health',
+    group: 'Core Services',
+  },
+  {
+    id: 'landing',
+    name: 'Landing Page',
+    description: 'Marketing website',
+    healthUrl: 'https://tokenbot.com',
+    group: 'Frontend',
+  },
+];
+
+// Check health of a single service
 async function checkServiceHealth(service: ServiceConfig): Promise<ServiceHealth> {
   const startTime = Date.now();
-  const lastChecked = new Date().toISOString();
-
+  
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    
     const response = await fetch(service.healthUrl, {
       method: 'GET',
       signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-      },
+      mode: 'cors',
       cache: 'no-store',
     });
-
+    
     clearTimeout(timeoutId);
     const latency = Date.now() - startTime;
-
-    if (!response.ok) {
+    
+    if (response.ok) {
       return {
-        serviceId: service.id,
+        id: service.id,
         name: service.name,
         description: service.description,
-        group: service.group,
-        status: 'outage',
+        status: 'operational',
         latency,
-        lastChecked,
-        healthData: null,
-        error: `HTTP ${response.status}: ${response.statusText}`,
+        lastCheck: new Date().toISOString(),
+        group: service.group,
+      };
+    } else {
+      return {
+        id: service.id,
+        name: service.name,
+        description: service.description,
+        status: response.status >= 500 ? 'down' : 'degraded',
+        latency,
+        lastCheck: new Date().toISOString(),
+        group: service.group,
       };
     }
-
-    const healthData: HealthCheck = await response.json();
-    
-    // Map health status to our status
-    let status: ServiceStatus = 'operational';
-    if (healthData.status === 'degraded') {
-      status = 'degraded';
-    } else if (healthData.status === 'unhealthy') {
-      status = 'outage';
-    }
-
-    return {
-      serviceId: service.id,
-      name: service.name,
-      description: service.description,
-      group: service.group,
-      status,
-      latency,
-      lastChecked,
-      healthData,
-      error: null,
-    };
   } catch (error) {
-    const latency = Date.now() - startTime;
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
+    // CORS errors or network failures
     return {
-      serviceId: service.id,
+      id: service.id,
       name: service.name,
       description: service.description,
+      status: 'unknown',
+      lastCheck: new Date().toISOString(),
       group: service.group,
-      status: 'outage',
-      latency: latency < TIMEOUT_MS ? latency : null,
-      lastChecked,
-      healthData: null,
-      error: errorMessage.includes('abort') ? 'Request timeout' : errorMessage,
     };
   }
 }
 
+// Check all services
 export async function checkAllServices(): Promise<SystemStatus> {
-  const healthChecks = await Promise.all(
-    services.map(service => checkServiceHealth(service))
-  );
-
-  // Calculate overall status
-  const statuses = healthChecks.map(h => h.status);
-  let overall: ServiceStatus = 'operational';
+  const results = await Promise.all(services.map(checkServiceHealth));
   
-  if (statuses.some(s => s === 'outage')) {
-    overall = statuses.every(s => s === 'outage') ? 'outage' : 'degraded';
-  } else if (statuses.some(s => s === 'degraded')) {
-    overall = 'degraded';
-  }
-
-  // Calculate uptime percentage (operational services)
-  const operationalCount = statuses.filter(s => s === 'operational').length;
-  const uptimePercentage = Math.round((operationalCount / statuses.length) * 100);
-
+  // Determine overall status
+  const hasDown = results.some(s => s.status === 'down');
+  const hasDegraded = results.some(s => s.status === 'degraded');
+  const allUnknown = results.every(s => s.status === 'unknown');
+  
+  let overall: ServiceStatus = 'operational';
+  if (hasDown) overall = 'down';
+  else if (hasDegraded) overall = 'degraded';
+  else if (allUnknown) overall = 'unknown';
+  
   return {
     overall,
-    services: healthChecks,
+    services: results,
     lastUpdated: new Date().toISOString(),
-    uptimePercentage,
   };
 }
 
-export function getStatusColor(status: ServiceStatus): string {
-  switch (status) {
-    case 'operational':
-      return 'green';
-    case 'degraded':
-      return 'yellow';
-    case 'outage':
-      return 'red';
-    default:
-      return 'gray';
-  }
-}
-
-export function getStatusLabel(status: ServiceStatus): string {
-  switch (status) {
-    case 'operational':
-      return 'Operational';
-    case 'degraded':
-      return 'Degraded Performance';
-    case 'outage':
-      return 'Outage';
-    default:
-      return 'Unknown';
-  }
+// Demo data for when real checks aren't available
+export function getDemoStatus(): SystemStatus {
+  return {
+    overall: 'operational',
+    services: services.map(s => ({
+      id: s.id,
+      name: s.name,
+      description: s.description,
+      status: 'operational' as ServiceStatus,
+      latency: Math.floor(Math.random() * 100) + 20,
+      lastCheck: new Date().toISOString(),
+      group: s.group,
+    })),
+    lastUpdated: new Date().toISOString(),
+  };
 }

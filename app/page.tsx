@@ -1,36 +1,39 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
 import OverallStatus from '@/components/OverallStatus';
 import ServiceList from '@/components/ServiceList';
 import IncidentFeed from '@/components/IncidentFeed';
 import UptimeBar, { generateMockUptimeData, calculateTotalUptime } from '@/components/UptimeBar';
-import { SystemStatus } from '@/lib/health-checker';
+import { SystemStatus, checkAllServices, getDemoStatus } from '@/lib/health-checker';
 import { Incident } from '@/lib/incidents';
-
-interface StatusData {
-  status: SystemStatus;
-  activeIncidents: Incident[];
-}
 
 const REFRESH_INTERVAL = 60000; // 60 seconds
 
 export default function StatusPage() {
-  const [data, setData] = useState<StatusData | null>(null);
+  const [status, setStatus] = useState<SystemStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [useDemo, setUseDemo] = useState(false);
 
   const fetchStatus = useCallback(async () => {
+    setLoading(true);
     try {
-      const response = await fetch('/api/status', { cache: 'no-store' });
-      if (!response.ok) throw new Error('Failed to fetch status');
-      const result = await response.json();
-      setData(result);
-      setError(null);
+      const result = await checkAllServices();
+      // If all services are unknown (CORS), fall back to demo
+      const allUnknown = result.services.every(s => s.status === 'unknown');
+      if (allUnknown) {
+        setUseDemo(true);
+        setStatus(getDemoStatus());
+      } else {
+        setUseDemo(false);
+        setStatus(result);
+      }
       setLastRefresh(new Date());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setUseDemo(true);
+      setStatus(getDemoStatus());
     } finally {
       setLoading(false);
     }
@@ -46,12 +49,15 @@ export default function StatusPage() {
   const uptimeData = generateMockUptimeData(90);
   const totalUptime = calculateTotalUptime(uptimeData);
 
-  if (loading && !data) {
+  // Mock incidents
+  const activeIncidents: Incident[] = [];
+
+  if (loading && !status) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0a0a' }}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#ffd60a] border-t-transparent mx-auto"></div>
-          <p className="mt-4 text-[#888888]">Loading status...</p>
+          <p className="mt-4 text-[#888888]">Checking services...</p>
         </div>
       </div>
     );
@@ -64,9 +70,13 @@ export default function StatusPage() {
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#ffd60a' }}>
-                <span className="text-black font-bold text-lg">TB</span>
-              </div>
+              <Image 
+                src="/tokenbot-logo.svg" 
+                alt="TokenBot" 
+                width={40} 
+                height={40}
+                className="rounded-xl"
+              />
               <div>
                 <h1 className="font-semibold text-white text-lg">
                   Token<span style={{ color: '#ffd60a' }}>Bot</span> Status
@@ -90,7 +100,7 @@ export default function StatusPage() {
                 href="https://tokenbot.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm transition-colors link-underline"
+                className="text-sm transition-colors hover:underline"
                 style={{ color: '#ffd60a' }}
               >
                 ← Back to TokenBot
@@ -101,73 +111,110 @@ export default function StatusPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
-        {error && (
-          <div className="rounded-xl p-4" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-            <div className="flex items-center gap-2" style={{ color: '#ef4444' }}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>Error loading status: {error}</span>
-            </div>
+      <main className="max-w-6xl mx-auto px-4 py-8">
+        {/* Demo Mode Banner */}
+        {useDemo && (
+          <div className="mb-6 p-4 rounded-xl border" style={{ background: '#1a1708', borderColor: '#332d0d' }}>
+            <p className="text-sm" style={{ color: '#ffd60a' }}>
+              <span className="font-semibold">Demo Mode:</span> Showing simulated status data. Live health checks require CORS-enabled service endpoints.
+            </p>
           </div>
         )}
 
-        {/* Overall Status Banner */}
-        {data && (
-          <OverallStatus
-            status={data.status.overall}
-            uptimePercentage={data.status.uptimePercentage}
-            lastUpdated={data.status.lastUpdated}
+        {/* Overall Status */}
+        <OverallStatus 
+          status={status?.overall || 'operational'} 
+          uptimePercentage={totalUptime}
+          lastUpdated={lastRefresh.toISOString()} 
+        />
+
+        {/* Active Incidents */}
+        {activeIncidents.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-lg font-semibold text-white mb-4">Active Incidents</h2>
+            <IncidentFeed incidents={activeIncidents} />
+          </div>
+        )}
+
+        {/* 90-Day Uptime */}
+        <div className="mt-8">
+          <UptimeBar 
+            serviceName="All Systems"
+            days={uptimeData}
+            totalUptime={totalUptime}
           />
-        )}
-
-        {/* Two Column Layout */}
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Services Column */}
-          <div className="lg:col-span-2 space-y-6">
-            <div>
-              <h2 className="text-xl font-semibold text-white mb-4">Services</h2>
-              {data && <ServiceList services={data.status.services} />}
-            </div>
-
-            {/* Uptime History */}
-            <div>
-              <h2 className="text-xl font-semibold text-white mb-4">90-Day Uptime</h2>
-              <UptimeBar
-                serviceName="All Services"
-                days={uptimeData}
-                totalUptime={totalUptime}
-              />
-            </div>
-          </div>
-
-          {/* Incidents Column */}
-          <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Recent Incidents</h2>
-            {data && <IncidentFeed incidents={data.activeIncidents} />}
-          </div>
         </div>
 
-        {/* Footer */}
-        <footer className="pt-8 border-t text-center text-sm" style={{ borderColor: '#1f1f1f', color: '#555555' }}>
-          <p>
-            Auto-refreshes every 60 seconds • Last refresh: {lastRefresh.toLocaleTimeString()}
-          </p>
-          <p className="mt-2">
-            <a href="/incidents" className="transition-colors hover:text-[#ffd60a]" style={{ color: '#888888' }}>
-              View incident history
-            </a>
+        {/* Services by Group */}
+        <div className="mt-8">
+          <h2 className="text-lg font-semibold text-white mb-4">Services</h2>
+          <ServiceList services={status?.services || []} />
+        </div>
+
+        {/* Last Updated */}
+        <div className="mt-8 text-center">
+          <p className="text-sm" style={{ color: '#555555' }}>
+            Last checked: {lastRefresh.toLocaleTimeString()} 
             {' • '}
-            <a href="/api/status" className="transition-colors hover:text-[#ffd60a]" style={{ color: '#888888' }}>
-              API
-            </a>
+            <button 
+              onClick={fetchStatus}
+              className="transition-colors hover:underline"
+              style={{ color: '#888888' }}
+            >
+              Refresh now
+            </button>
           </p>
-          <p className="mt-4 text-xs" style={{ color: '#555555' }}>
-            Powered by <span style={{ color: '#ffd60a' }}>TokenBot</span>
-          </p>
-        </footer>
+        </div>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t mt-16" style={{ background: '#0d0d0d', borderColor: '#1a1a1a' }}>
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Image 
+                src="/tokenbot-logo.svg" 
+                alt="TokenBot" 
+                width={24} 
+                height={24}
+              />
+              <span className="text-sm" style={{ color: '#888888' }}>
+                Powered by <span className="text-white">TokenBot</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-6">
+              <a
+                href="https://tokenbot.com"
+                className="text-sm transition-colors hover:text-white"
+                style={{ color: '#888888' }}
+              >
+                Home
+              </a>
+              <a
+                href="https://app.tokenbot.com"
+                className="text-sm transition-colors hover:text-white"
+                style={{ color: '#888888' }}
+              >
+                Dashboard
+              </a>
+              <a
+                href="https://docs.tokenbot.com"
+                className="text-sm transition-colors hover:text-white"
+                style={{ color: '#888888' }}
+              >
+                Docs
+              </a>
+              <a
+                href="/incidents"
+                className="text-sm transition-colors hover:text-white"
+                style={{ color: '#888888' }}
+              >
+                Incident History
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -23,7 +23,7 @@ const statusConfig = {
     description: 'Some services are experiencing issues.',
     dotColor: '#eab308',
   },
-  outage: {
+  down: {
     bg: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
     text: 'Service Outage',
     icon: '✕',
