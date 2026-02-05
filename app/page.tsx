@@ -48,35 +48,38 @@ export default function StatusPage() {
 
   if (loading && !data) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0a0a' }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading status...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#ffd60a] border-t-transparent mx-auto"></div>
+          <p className="mt-4 text-[#888888]">Loading status...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen" style={{ background: '#0a0a0a' }}>
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <header className="border-b" style={{ background: '#0d0d0d', borderColor: '#1a1a1a' }}>
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">TB</span>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#ffd60a' }}>
+                <span className="text-black font-bold text-lg">TB</span>
               </div>
               <div>
-                <h1 className="font-semibold text-gray-900 dark:text-white">TokenBot Status</h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400">System Status Dashboard</p>
+                <h1 className="font-semibold text-white text-lg">
+                  Token<span style={{ color: '#ffd60a' }}>Bot</span> Status
+                </h1>
+                <p className="text-xs" style={{ color: '#555555' }}>System Status Dashboard</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <button
                 onClick={fetchStatus}
                 disabled={loading}
-                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
+                className="p-2 rounded-lg transition-colors disabled:opacity-50 hover:bg-[#1f1f1f]"
+                style={{ color: '#888888' }}
                 title="Refresh"
               >
                 <svg className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,7 +90,8 @@ export default function StatusPage() {
                 href="https://tokenbot.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                className="text-sm transition-colors link-underline"
+                style={{ color: '#ffd60a' }}
               >
                 ← Back to TokenBot
               </a>
@@ -99,8 +103,8 @@ export default function StatusPage() {
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-700 dark:text-red-400">
-            <div className="flex items-center gap-2">
+          <div className="rounded-xl p-4" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+            <div className="flex items-center gap-2" style={{ color: '#ef4444' }}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -123,13 +127,13 @@ export default function StatusPage() {
           {/* Services Column */}
           <div className="lg:col-span-2 space-y-6">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Services</h2>
+              <h2 className="text-xl font-semibold text-white mb-4">Services</h2>
               {data && <ServiceList services={data.status.services} />}
             </div>
 
             {/* Uptime History */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">90-Day Uptime</h2>
+              <h2 className="text-xl font-semibold text-white mb-4">90-Day Uptime</h2>
               <UptimeBar
                 serviceName="All Services"
                 days={uptimeData}
@@ -140,26 +144,29 @@ export default function StatusPage() {
 
           {/* Incidents Column */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Recent Incidents</h2>
+            <h2 className="text-xl font-semibold text-white mb-4">Recent Incidents</h2>
             {data && <IncidentFeed incidents={data.activeIncidents} />}
           </div>
         </div>
 
-        {/* Footer Info */}
-        <div className="pt-8 border-t border-gray-200 dark:border-gray-700 text-center text-sm text-gray-500 dark:text-gray-400">
+        {/* Footer */}
+        <footer className="pt-8 border-t text-center text-sm" style={{ borderColor: '#1f1f1f', color: '#555555' }}>
           <p>
             Auto-refreshes every 60 seconds • Last refresh: {lastRefresh.toLocaleTimeString()}
           </p>
           <p className="mt-2">
-            <a href="/incidents" className="text-blue-600 dark:text-blue-400 hover:underline">
+            <a href="/incidents" className="transition-colors hover:text-[#ffd60a]" style={{ color: '#888888' }}>
               View incident history
             </a>
             {' • '}
-            <a href="/api/status" className="text-blue-600 dark:text-blue-400 hover:underline">
+            <a href="/api/status" className="transition-colors hover:text-[#ffd60a]" style={{ color: '#888888' }}>
               API
             </a>
           </p>
-        </div>
+          <p className="mt-4 text-xs" style={{ color: '#555555' }}>
+            Powered by <span style={{ color: '#ffd60a' }}>TokenBot</span>
+          </p>
+        </footer>
       </main>
     </div>
   );

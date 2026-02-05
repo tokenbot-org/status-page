@@ -18,11 +18,11 @@ export default function UptimeBar({ serviceName, days, totalUptime }: UptimeBarP
   const [hoveredDay, setHoveredDay] = useState<DayStatus | null>(null);
 
   const getBarColor = (uptime: number) => {
-    if (uptime >= 99.9) return 'bg-green-500';
-    if (uptime >= 99) return 'bg-green-400';
-    if (uptime >= 95) return 'bg-yellow-500';
-    if (uptime >= 90) return 'bg-orange-500';
-    return 'bg-red-500';
+    if (uptime >= 99.9) return '#22c55e';
+    if (uptime >= 99) return '#4ade80';
+    if (uptime >= 95) return '#eab308';
+    if (uptime >= 90) return '#f97316';
+    return '#ef4444';
   };
 
   const formatDate = (dateStr: string) => {
@@ -33,10 +33,19 @@ export default function UptimeBar({ serviceName, days, totalUptime }: UptimeBarP
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-medium text-gray-900 dark:text-white">{serviceName}</h3>
-        <span className="text-sm text-gray-500 dark:text-gray-400">
+    <div 
+      className="rounded-xl p-5"
+      style={{ 
+        background: '#111111', 
+        border: '1px solid #1f1f1f',
+      }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-medium text-white">{serviceName}</h3>
+        <span 
+          className="text-sm font-medium"
+          style={{ color: totalUptime >= 99 ? '#22c55e' : totalUptime >= 95 ? '#eab308' : '#ef4444' }}
+        >
           {totalUptime.toFixed(2)}% uptime
         </span>
       </div>
@@ -46,7 +55,11 @@ export default function UptimeBar({ serviceName, days, totalUptime }: UptimeBarP
           {days.map((day, index) => (
             <div
               key={index}
-              className={`flex-1 h-8 rounded-sm ${getBarColor(day.uptime)} cursor-pointer hover:opacity-80 transition-opacity`}
+              className="flex-1 h-10 rounded cursor-pointer transition-all hover:opacity-80 hover:scale-y-105"
+              style={{ 
+                background: getBarColor(day.uptime),
+                minWidth: '3px',
+              }}
               onMouseEnter={() => setHoveredDay(day)}
               onMouseLeave={() => setHoveredDay(null)}
             />
@@ -54,18 +67,27 @@ export default function UptimeBar({ serviceName, days, totalUptime }: UptimeBarP
         </div>
         
         {hoveredDay && (
-          <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg z-10">
-            <div className="font-medium">{formatDate(hoveredDay.date)}</div>
-            <div>{hoveredDay.uptime.toFixed(2)}% uptime</div>
+          <div 
+            className="absolute -top-20 left-1/2 transform -translate-x-1/2 text-xs rounded-lg px-4 py-3 shadow-xl z-10"
+            style={{ 
+              background: '#1f1f1f', 
+              border: '1px solid #2a2a2a',
+            }}
+          >
+            <div className="font-medium text-white">{formatDate(hoveredDay.date)}</div>
+            <div style={{ color: '#888888' }}>{hoveredDay.uptime.toFixed(2)}% uptime</div>
             {hoveredDay.incidents > 0 && (
-              <div className="text-yellow-400">{hoveredDay.incidents} incident(s)</div>
+              <div style={{ color: '#eab308' }}>{hoveredDay.incidents} incident(s)</div>
             )}
-            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900" />
+            <div 
+              className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-2.5 h-2.5"
+              style={{ background: '#1f1f1f', borderRight: '1px solid #2a2a2a', borderBottom: '1px solid #2a2a2a' }}
+            />
           </div>
         )}
       </div>
       
-      <div className="flex justify-between mt-2 text-xs text-gray-400">
+      <div className="flex justify-between mt-3 text-xs" style={{ color: '#555555' }}>
         <span>90 days ago</span>
         <span>Today</span>
       </div>

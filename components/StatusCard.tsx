@@ -6,26 +6,30 @@ interface StatusCardProps {
   service: ServiceHealth;
 }
 
-const statusStyles: Record<ServiceStatus, { dot: string; bg: string; text: string }> = {
+const statusStyles: Record<ServiceStatus, { dot: string; bg: string; text: string; border: string }> = {
   operational: {
-    dot: 'bg-green-500',
-    bg: 'bg-green-50 dark:bg-green-900/20',
-    text: 'text-green-700 dark:text-green-400',
+    dot: '#22c55e',
+    bg: 'rgba(34, 197, 94, 0.1)',
+    text: '#22c55e',
+    border: 'rgba(34, 197, 94, 0.3)',
   },
   degraded: {
-    dot: 'bg-yellow-500',
-    bg: 'bg-yellow-50 dark:bg-yellow-900/20',
-    text: 'text-yellow-700 dark:text-yellow-400',
+    dot: '#eab308',
+    bg: 'rgba(234, 179, 8, 0.1)',
+    text: '#eab308',
+    border: 'rgba(234, 179, 8, 0.3)',
   },
   outage: {
-    dot: 'bg-red-500',
-    bg: 'bg-red-50 dark:bg-red-900/20',
-    text: 'text-red-700 dark:text-red-400',
+    dot: '#ef4444',
+    bg: 'rgba(239, 68, 68, 0.1)',
+    text: '#ef4444',
+    border: 'rgba(239, 68, 68, 0.3)',
   },
   unknown: {
-    dot: 'bg-gray-400',
-    bg: 'bg-gray-50 dark:bg-gray-800',
-    text: 'text-gray-600 dark:text-gray-400',
+    dot: '#555555',
+    bg: 'rgba(85, 85, 85, 0.1)',
+    text: '#888888',
+    border: 'rgba(85, 85, 85, 0.3)',
   },
 };
 
@@ -54,28 +58,47 @@ export default function StatusCard({ service }: StatusCardProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow">
+    <div 
+      className="rounded-xl p-4 card-hover"
+      style={{ 
+        background: '#111111', 
+        border: '1px solid #1f1f1f',
+      }}
+    >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div className={`w-3 h-3 rounded-full ${style.dot} animate-pulse`} />
+          <div 
+            className="w-3 h-3 rounded-full animate-pulse-dot"
+            style={{ 
+              background: style.dot,
+              boxShadow: `0 0 8px ${style.dot}`,
+            }} 
+          />
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">{service.name}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{service.description}</p>
+            <h3 className="font-semibold text-white">{service.name}</h3>
+            <p className="text-sm" style={{ color: '#888888' }}>{service.description}</p>
           </div>
         </div>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
+        <span 
+          className="px-3 py-1 rounded-full text-xs font-medium"
+          style={{ 
+            background: style.bg, 
+            color: style.text,
+            border: `1px solid ${style.border}`,
+          }}
+        >
           {statusLabels[service.status]}
         </span>
       </div>
       
-      <div className="mt-4 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-        <div className="flex items-center gap-1">
+      <div className="mt-4 flex items-center gap-4 text-sm" style={{ color: '#555555' }}>
+        <div className="flex items-center gap-1.5">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span>{formatLatency(service.latency)}</span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
@@ -84,7 +107,14 @@ export default function StatusCard({ service }: StatusCardProps) {
       </div>
 
       {service.error && (
-        <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 rounded text-sm text-red-600 dark:text-red-400">
+        <div 
+          className="mt-3 p-3 rounded-lg text-sm"
+          style={{ 
+            background: 'rgba(239, 68, 68, 0.1)', 
+            color: '#ef4444',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+          }}
+        >
           {service.error}
         </div>
       )}

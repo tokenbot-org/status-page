@@ -10,28 +10,32 @@ interface OverallStatusProps {
 
 const statusConfig = {
   operational: {
-    bg: 'bg-green-500',
+    bg: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
     text: 'All Systems Operational',
     icon: '✓',
     description: 'All services are running smoothly.',
+    dotColor: '#22c55e',
   },
   degraded: {
-    bg: 'bg-yellow-500',
+    bg: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)',
     text: 'Degraded Performance',
     icon: '⚠',
     description: 'Some services are experiencing issues.',
+    dotColor: '#eab308',
   },
   outage: {
-    bg: 'bg-red-500',
+    bg: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
     text: 'Service Outage',
     icon: '✕',
     description: 'One or more services are currently unavailable.',
+    dotColor: '#ef4444',
   },
   unknown: {
-    bg: 'bg-gray-500',
+    bg: 'linear-gradient(135deg, #555555 0%, #444444 100%)',
     text: 'Status Unknown',
     icon: '?',
     description: 'Unable to determine system status.',
+    dotColor: '#555555',
   },
 };
 
@@ -49,14 +53,23 @@ export default function OverallStatus({ status, uptimePercentage, lastUpdated }:
   });
 
   return (
-    <div className={`${config.bg} rounded-xl p-8 text-white shadow-lg`}>
-      <div className="flex items-center justify-between">
+    <div 
+      className="rounded-xl p-8 text-white shadow-lg animate-fade-in"
+      style={{ background: config.bg }}
+    >
+      <div className="flex items-center justify-between flex-wrap gap-6">
         <div className="flex items-center gap-4">
-          <div className="text-4xl font-bold bg-white/20 rounded-full w-16 h-16 flex items-center justify-center">
+          <div className="text-4xl font-bold bg-white/20 backdrop-blur-sm rounded-full w-16 h-16 flex items-center justify-center">
             {config.icon}
           </div>
           <div>
-            <h1 className="text-3xl font-bold">{config.text}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold">{config.text}</h1>
+              <span 
+                className="w-3 h-3 rounded-full animate-pulse-dot"
+                style={{ background: '#fff', boxShadow: `0 0 12px ${config.dotColor}` }}
+              />
+            </div>
             <p className="text-white/80 mt-1">{config.description}</p>
           </div>
         </div>

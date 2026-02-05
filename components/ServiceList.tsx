@@ -33,8 +33,11 @@ export default function ServiceList({ services }: ServiceListProps) {
         
         return (
           <div key={groupKey}>
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-gray-400" />
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: '#ffffff' }}>
+              <span 
+                className="w-2 h-2 rounded-full"
+                style={{ background: '#ffd60a' }}
+              />
               {groupInfo?.name || groupKey}
             </h2>
             <div className="grid gap-4 md:grid-cols-2">
