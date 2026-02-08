@@ -27,48 +27,56 @@ export interface ServiceConfig {
   group: string;
 }
 
-// Production service URLs - these should match your deployed services
+// Service URLs from environment variables with production fallbacks
+const SERVICE_REST_API_URL = process.env.NEXT_PUBLIC_SERVICE_REST_API_URL || 'https://rest-api.tokenbot.com';
+const SERVICE_GQL_API_URL = process.env.NEXT_PUBLIC_SERVICE_GQL_API_URL || 'https://gql-api.tokenbot.com';
+const SERVICE_DASHBOARD_URL = process.env.NEXT_PUBLIC_SERVICE_DASHBOARD_URL || 'https://app.tokenbot.com';
+const SERVICE_ADMIN_URL = process.env.NEXT_PUBLIC_SERVICE_ADMIN_URL || 'https://admin.tokenbot.com';
+const SERVICE_WEBHOOKS_URL = process.env.NEXT_PUBLIC_SERVICE_WEBHOOKS_URL || 'https://webhooks.tokenbot.com';
+const SERVICE_LANDING_URL = process.env.NEXT_PUBLIC_SERVICE_LANDING_URL || 'https://tokenbot.com';
+
+// Production service URLs - configured via environment variables
 export const services: ServiceConfig[] = [
   {
     id: 'rest-api',
     name: 'REST API',
     description: 'External API for trading bot management',
-    healthUrl: 'https://rest-api.tokenbot.com/v1/health',
+    healthUrl: `${SERVICE_REST_API_URL}/v1/health`,
     group: 'API Services',
   },
   {
     id: 'graphql',
     name: 'GraphQL API',
     description: 'GraphQL backend for dashboards',
-    healthUrl: 'https://gql-api.tokenbot.com/health',
+    healthUrl: `${SERVICE_GQL_API_URL}/health`,
     group: 'API Services',
   },
   {
     id: 'dashboard',
     name: 'User Dashboard',
     description: 'Web application for users',
-    healthUrl: 'https://app.tokenbot.com/api/health',
+    healthUrl: `${SERVICE_DASHBOARD_URL}/api/health`,
     group: 'Frontend',
   },
   {
     id: 'admin-dashboard',
     name: 'Admin Dashboard',
     description: 'Admin panel for management',
-    healthUrl: 'https://admin.tokenbot.com/api/health',
+    healthUrl: `${SERVICE_ADMIN_URL}/api/health`,
     group: 'Frontend',
   },
   {
     id: 'webhooks',
     name: 'Webhooks Service',
     description: 'Webhook delivery service',
-    healthUrl: 'https://webhooks.tokenbot.com/health',
+    healthUrl: `${SERVICE_WEBHOOKS_URL}/health`,
     group: 'Core Services',
   },
   {
     id: 'landing',
     name: 'Landing Page',
     description: 'Marketing website',
-    healthUrl: 'https://tokenbot.com',
+    healthUrl: SERVICE_LANDING_URL,
     group: 'Frontend',
   },
 ];
