@@ -40,7 +40,7 @@ function parseFrontmatter(content: string): { data: Record<string, string | stri
     const colonIndex = line.indexOf(':');
     if (colonIndex > 0) {
       const key = line.substring(0, colonIndex).trim();
-      let value = line.substring(colonIndex + 1).trim();
+      const value = line.substring(colonIndex + 1).trim();
       
       // Handle arrays (comma-separated)
       if (value.startsWith('[') && value.endsWith(']')) {
