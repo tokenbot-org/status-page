@@ -82,11 +82,58 @@ jobs:
     needs: deploy-dev
     if: always()
     steps:
-      - name: Deployment result
+      - name: Send Discord notification
+        if: vars.DISCORD_WEBHOOK_URL != ''
+        env:
+          DISCORD_WEBHOOK_URL: ${{ vars.DISCORD_WEBHOOK_URL }}
         run: |
           if [ "${{ needs.deploy-dev.result }}" == "success" ]; then
-            echo "✅ Dev deployment successful!"
+            STATUS="🚀 Development deployment successful"
+            COLOR=3066993
           else
-            echo "❌ Dev deployment failed!"
+            STATUS="❌ Development deployment FAILED"
+            COLOR=15158332
+          fi
+          
+          curl -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"$STATUS\",
+                \"description\": \"Repository: ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nCommit: \`${GITHUB_SHA::7}\`\",
+                \"color\": $COLOR,
+                \"url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+              }]
+            }" \
+            "$DISCORD_WEBHOOK_URL" || true
+
+      - name: Send Slack notification
+        if: vars.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ vars.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ "${{ needs.deploy-dev.result }}" == "success" ]; then
+            STATUS="🚀 Development deployment successful"
+            COLOR="good"
+          else
+            STATUS="❌ Development deployment FAILED"
+            COLOR="danger"
+          fi
+          
+          curl -X POST -H "Content-Type: application/json" \
+            -d "{
+              \"attachments\": [{
+                \"color\": \"$COLOR\",
+                \"title\": \"$STATUS\",
+                \"text\": \"Repository: ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nCommit: ${GITHUB_SHA::7}\"
+              }]
+            }" \
+            "$SLACK_WEBHOOK_URL" || true
+
+      - name: Deployment result summary
+        run: |
+          if [ "${{ needs.deploy-dev.result }}" == "success" ]; then
+            echo "✅ Development deployment successful!"
+          else
+            echo "❌ Development deployment failed!"
             exit 1
           fi
