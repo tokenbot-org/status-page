@@ -89,11 +89,58 @@ jobs:
     needs: deploy-prod
     if: always()
     steps:
-      - name: Deployment result
+      - name: Send Discord notification
+        if: vars.DISCORD_WEBHOOK_URL != ''
+        env:
+          DISCORD_WEBHOOK_URL: ${{ vars.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ "${{ needs.deploy-prod.result }}" == "success" ]; then
+            STATUS="🎉 Production deployment successful"
+            COLOR=3066993
+          else
+            STATUS="🚨 Production deployment FAILED"
+            COLOR=15158332
+          fi
+          
+          curl -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"$STATUS\",
+                \"description\": \"Repository: ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nCommit: \`${GITHUB_SHA::7}\`\",
+                \"color\": $COLOR,
+                \"url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+              }]
+            }" \
+            "$DISCORD_WEBHOOK_URL" || true
+
+      - name: Send Slack notification
+        if: vars.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ vars.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ "${{ needs.deploy-prod.result }}" == "success" ]; then
+            STATUS="🎉 Production deployment successful"
+            COLOR="good"
+          else
+            STATUS="🚨 Production deployment FAILED"
+            COLOR="danger"
+          fi
+          
+          curl -X POST -H "Content-Type: application/json" \
+            -d "{
+              \"attachments\": [{
+                \"color\": \"$COLOR\",
+                \"title\": \"$STATUS\",
+                \"text\": \"Repository: ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nCommit: ${GITHUB_SHA::7}\"
+              }]
+            }" \
+            "$SLACK_WEBHOOK_URL" || true
+
+      - name: Deployment result summary
         run: |
           if [ "${{ needs.deploy-prod.result }}" == "success" ]; then
             echo "✅ Production deployment successful!"
           else
-            echo "🚨 PRODUCTION DEPLOYMENT FAILED!"
+            echo "🚨 Production deployment failed!"
             exit 1
           fi
