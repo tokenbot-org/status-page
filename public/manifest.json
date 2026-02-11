@@ -1,0 +1,13 @@
+{
+  "name": "TokenBot® Status",
+  "short_name": "TokenBot Status",
+  "description": "TokenBot System Status",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#FFD60A",
+  "icons": [
+    { "src": "/TokenBot-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/TokenBot-310.png", "sizes": "310x310", "type": "image/png" }
+  ]
+}
