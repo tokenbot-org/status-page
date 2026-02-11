@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    groups:
+      production:
+        patterns: ["*"]
+        exclude-patterns: ["@types/*", "eslint*", "prettier*", "*test*", "*jest*", "*vitest*"]
+      dev:
+        patterns: ["@types/*", "eslint*", "prettier*", "*test*", "*jest*", "*vitest*"]
+    labels:
+      - "dependencies"
+      - "automated"
